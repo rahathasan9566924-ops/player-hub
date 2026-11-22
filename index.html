@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player Hub (Prototype)</title>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#171c26; --panel2:#1f2632; --line:#2a3342;
+    --text:#e8ecf3; --muted:#8b95a7; --accent:#38d6a4; --accent2:#ff7a59;
+    --gold:#f2c14e; --blue:#4aa8ff; --red:#ff5d6c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,"Noto Sans Bengali",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:70px}
+  header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:10px}
+  header h1{font-size:18px;flex:1}
+  .back{background:none;border:0;color:var(--text);font-size:20px;cursor:pointer;display:none}
+  .lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .lang button{background:var(--panel);border:0;color:var(--muted);padding:6px 10px;font-size:13px;cursor:pointer}
+  .lang button.on{background:var(--accent);color:#06130e;font-weight:700}
+  .search{padding:12px 16px}
+  .search input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:15px;outline:none}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px}
+  .chip{flex:none;padding:6px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:13px;cursor:pointer}
+  .chip.on{background:var(--accent);color:#06130e;border-color:var(--accent);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px}
+  @media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}
+  .card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;position:relative}
+  .card .ovr{font-size:28px;font-weight:800;color:var(--gold);line-height:1}
+  .card .pos{font-size:12px;color:var(--muted);margin-top:2px}
+  .card .name{margin-top:18px;font-weight:600;font-size:15px}
+  .card .club{font-size:12px;color:var(--muted)}
+  .tier{position:absolute;top:10px;right:10px;font-size:11px;padding:2px 7px;border-radius:6px;background:var(--line);color:var(--text)}
+  .section-title{padding:18px 16px 10px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .empty{padding:40px 16px;text-align:center;color:var(--muted)}
+
+  #detail{display:none}
+  .hero{display:flex;gap:16px;padding:16px;align-items:center;background:linear-gradient(180deg,#1b2638,var(--bg))}
+  .hero .big{width:110px;height:150px;border-radius:14px;background:linear-gradient(160deg,#2c3b56,#131a26);border:2px solid var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+  .hero .big b{font-size:44px;color:var(--gold);line-height:1}
+  .hero .big span{font-size:13px;color:var(--muted)}
+  .hero h2{font-size:22px}
+  .hero p{color:var(--muted);font-size:13px;margin-top:4px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:16px}
+  .stat span{font-size:11px;color:var(--muted)}
+  .tabs{display:flex;border-bottom:1px solid var(--line);margin-top:16px;overflow-x:auto}
+  .tab{flex:none;padding:12px 14px;color:var(--muted);font-size:14px;cursor:pointer;border-bottom:2px solid transparent}
+  .tab.on{color:var(--accent);border-color:var(--accent)}
+  .pane{padding:14px 16px}
+  .attr-group{margin-bottom:16px}
+  .attr-group h3{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .attr{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:14px}
+  .attr .lab{flex:1}
+  .bar{width:110px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  .val{width:30px;text-align:right;font-weight:700}
+  .skills{display:flex;flex-wrap:wrap;gap:8px}
+  .skill{padding:8px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-size:13px}
+  .skill.gold{border-color:var(--gold);color:var(--gold)}
+  .pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .pcell{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;font-size:13px}
+  .pcell b{display:block;font-size:18px;margin-top:4px}
+  .build{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+  .build .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .build h4{font-size:15px}
+  .build small{color:var(--muted)}
+  .vote{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap}
+  .vote.on{background:var(--accent2);border-color:var(--accent2)}
+  .btn{width:100%;margin-top:10px;padding:12px;border-radius:12px;border:0;background:var(--accent);color:#06130e;font-weight:700;font-size:15px;cursor:pointer}
+  .btn.ghost{background:var(--panel);color:var(--text);border:1px solid var(--line)}
+  .compare-bar{position:fixed;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--line);padding:10px 16px;display:none;align-items:center;gap:10px;z-index:20}
+  .compare-bar span{flex:1;font-size:13px;color:var(--muted)}
+  .compare-bar button{padding:10px 14px;border-radius:10px;border:0;background:var(--accent);color:#06130e;font-weight:700;cursor:pointer}
+  .cmp{width:100%;border-collapse:collapse;font-size:14px}
+  .cmp td,.cmp th{padding:10px 6px;border-bottom:1px solid var(--line);text-align:center}
+  .cmp th:first-child,.cmp td:first-child{text-align:left;color:var(--muted)}
+  .note{font-size:12px;color:var(--muted);padding:10px 16px}
+  .cardcmp{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="back" id="backBtn" aria-label="Back">←</button>
+  <h1 id="title">Player Hub</h1>
+  <div class="lang" role="group" aria-label="Language">
+    <button data-lang="en" class="on">EN</button>
+    <button data-lang="bn">বাংলা</button>
+  </div>
+</header>
+
+<!-- LIST VIEW -->
+<section id="list">
+  <div class="search"><input id="q" autocomplete="off"></div>
+  <div class="chips" id="chips"></div>
+  <div class="section-title" id="allTitle"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none"></div>
+</section>
+
+<!-- DETAIL VIEW -->
+<section id="detail">
+  <div class="hero">
+    <div class="big"><b id="dOvr">0</b><span id="dPos">POS</span></div>
+    <div>
+      <h2 id="dName"></h2>
+      <p id="dClub"></p>
+      <p id="dPlaystyle"></p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="sH"></b><span data-i18n="height"></span></div>
+    <div class="stat"><b id="sW"></b><span data-i18n="weight"></span></div>
+    <div class="stat"><b id="sA"></b><span data-i18n="age"></span></div>
+    <div class="stat"><b id="sF"></b><span data-i18n="foot"></span></div>
+  </div>
+  <div class="tabs" id="tabs">
+    <div class="tab on" data-t="ov" data-i18n="tabOverview"></div>
+    <div class="tab" data-t="at" data-i18n="tabAttributes"></div>
+    <div class="tab" data-t="sk" data-i18n="tabSkills"></div>
+    <div class="tab" data-t="ps" data-i18n="tabPositions"></div>
+    <div class="tab" data-t="bd" data-i18n="tabBuilds"></div>
+  </div>
+
+  <div class="pane" id="p-ov"></div>
+  <div class="pane" id="p-at" style="display:none"></div>
+  <div class="pane" id="p-sk" style="display:none"></div>
+  <div class="pane" id="p-ps" style="display:none"></div>
+  <div class="pane" id="p-bd" style="display:none"></div>
+</section>
+
+<!-- Compare -->
+<section id="compareView" style="display:none">
+  <div class="section-title" data-i18n="compareTitle"></div>
+  <div class="pane"><table class="cmp" id="cmpTable"></table></div>
+  <div style="padding:0 16px"><button class="btn ghost" id="closeCmp" data-i18n="close"></button></div>
+</section>
+
+<div class="compare-bar" id="cbar">
+  <span id="cText"></span>
+  <button id="cGo" data-i18n="compareBtn"></button>
+</div>
+
+<script>
+// ---- Sample data (fictional, not real players) ----
+const ATTR_GROUPS = {
+  attack:  ["Offensive Awareness","Ball Control","Dribbling","Tight Possession","Low Pass","Lofted Pass","Finishing","Heading","Set Pieces","Curl"],
+  power:   ["Speed","Acceleration","Kicking Power","Jumping","Physical Contact","Balance","Stamina"],
+  defence: ["Defensive Awareness","Tackling","Aggression","Defensive Engagement"],
+  gk:      ["GK Awareness","GK Catching","GK Deflecting","GK Reflexes"]
+};
+
+const PLAYERS = [
+  { id:1, name:"Marco Vellan", club:"Northbridge FC", pos:"LB", ovr:87, max:94, tier:"B", h:178, w:74, age:25, foot:"L", playstyle:"Offensive Fullback · The Destroyer",
+    attrs:{ "Offensive Awareness":79,"Ball Control":80,"Dribbling":84,"Tight Possession":81,"Low Pass":80,"Lofted Pass":87,"Finishing":76,"Heading":71,"Set Pieces":87,"Curl":90,
+            "Speed":92,"Acceleration":94,"Kicking Power":88,"Jumping":83,"Physical Contact":86,"Balance":92,"Stamina":90,
+            "Defensive Awareness":80,"Tackling":86,"Aggression":86,"Defensive Engagement":83,
+            "GK Awareness":41,"GK Catching":41,"GK Deflecting":41,"GK Reflexes":41 },
+    skills:["Low Screamer","Edged Crossing","Shadow Hunt","Through Passing","Pinpoint Crossing","Long Throws"], gold:[0,1,2],
+    positions:{ LB:86, LWF:78, LMF:74, DMF:70, CB:72, RB:85, GK:20 } },
+  { id:2, name:"Daniel Okafor", club:"Riverside United", pos:"CF", ovr:88, max:95, tier:"A", h:184, w:79, age:27, foot:"R", playstyle:"Goal Poacher · Chip Shot Control",
+    attrs:{ "Offensive Awareness":92,"Ball Control":84,"Dribbling":86,"Tight Possession":80,"Low Pass":75,"Lofted Pass":70,"Finishing":94,"Heading":90,"Set Pieces":60,"Curl":72,
+            "Speed":86,"Acceleration":88,"Kicking Power":90,"Jumping":89,"Physical Contact":84,"Balance":82,"Stamina":80,
+            "Defensive Awareness":40,"Tackling":35,"Aggression":70,"Defensive Engagement":38,
+            "GK Awareness":30,"GK Catching":30,"GK Deflecting":30,"GK Reflexes":30 },
+    skills:["Chip Shot Control","Long Range Shooting","Rising Shot","Cross Shot","Fox in the Box"], gold:[0,2],
+    positions:{ CF:88, ST:87, LWF:82, RWF:83, AMF:70, CMF:52, GK:10 } },
+  { id:3, name:"Ilias Ferreira", club:"Lakeshore City", pos:"CMF", ovr:84, max:91, tier:"A", h:176, w:70, age:23, foot:"R", playstyle:"Creative Playmaker · Through Passing",
+    attrs:{ "Offensive Awareness":85,"Ball Control":89,"Dribbling":82,"Tight Possession":88,"Low Pass":91,"Lofted Pass":84,"Finishing":68,"Heading":60,"Set Pieces":80,"Curl":78,
+            "Speed":76,"Acceleration":78,"Kicking Power":80,"Jumping":66,"Physical Contact":70,"Balance":84,"Stamina":88,
+            "Defensive Awareness":74,"Tackling":70,"Aggression":66,"Defensive Engagement":72,
+            "GK Awareness":25,"GK Catching":25,"GK Deflecting":25,"GK Reflexes":25 },
+    skills:["Through Passing","Pinpoint Passing","Incisive Run","Rising Shot"], gold:[0],
+    positions:{ CMF:90, AMF:88, DMF:82, LMF:84, RMF:84, CF:62, GK:12 } },
+  { id:4, name:"Tomas Hadley", club:"Harbour Athletic", pos:"GK", ovr:86, max:92, tier:"B", h:190, w:84, age:29, foot:"R", playstyle:"Sweeper Keeper",
+    attrs:{ "Offensive Awareness":20,"Ball Control":45,"Dribbling":20,"Tight Possession":40,"Low Pass":60,"Lofted Pass":55,"Finishing":15,"Heading":30,"Set Pieces":25,"Curl":10,
+            "Speed":55,"Acceleration":50,"Kicking Power":78,"Jumping":84,"Physical Contact":80,"Balance":72,"Stamina":70,
+            "Defensive Awareness":60,"Tackling":40,"Aggression":50,"Defensive Engagement":40,
+            "GK Awareness":90,"GK Catching":88,"GK Deflecting":86,"GK Reflexes":91 },
+    skills:["Long Throws","Cross Catching","Bicycle Clearance"], gold:[1],
+    positions:{ GK:92, CB:40, CMF:30, LB:28, RB:28, CF:12 } },
+  { id:5, name:"Kenji Aoyama", club:"Sakura Youth", pos:"RWF", ovr:85, max:93, tier:"A", h:172, w:65, age:21, foot:"R", playstyle:"Speedster · Outside Curler",
+    attrs:{ "Offensive Awareness":83,"Ball Control":86,"Dribbling":93,"Tight Possession":88,"Low Pass":72,"Lofted Pass":68,"Finishing":82,"Heading":52,"Set Pieces":70,"Curl":84,
+            "Speed":95,"Acceleration":96,"Kicking Power":74,"Jumping":60,"Physical Contact":58,"Balance":86,"Stamina":82,
+            "Defensive Awareness":44,"Tackling":40,"Aggression":52,"Defensive Engagement":42,
+            "GK Awareness":22,"GK Catching":22,"GK Deflecting":22,"GK Reflexes":22 },
+    skills:["Outside Curler","Flip Flap","Quick Step","Super-Sub"], gold:[0,3],
+    positions:{ RWF:90, LWF:88, AMF:80, RMF:82, CF:78, LMF:80, GK:8 } }
+];
+
+const BUILDS = {
+  1: [ {title:{en:"Attacking Fullback",bn:"অ্যাটাকিং ফুলব্যাক"}, by:"NurGamer", votes:128, desc:{en:"Overlapping runs, booster: Agility +4",bn:"ওভারল্যাপিং রান, বুস্টার: Agility +4"}},
+       {title:{en:"Defensive Standard",bn:"ডিফেন্সিভ স্ট্যান্ডার্ড"}, by:"TacticsBD", votes:64, desc:{en:"More focus on tackling and defence",bn:"ট্যাকলিং ও রক্ষণে বেশি জোর"}} ],
+  2: [ {title:{en:"Box Poacher",bn:"বক্স পোচার"}, by:"StrikerPro", votes:211, desc:{en:"Finishing and heading, Chip Shot Control",bn:"ফিনিশিং ও হেডিং, Chip Shot Control"}} ],
+  3: [ {title:{en:"Playmaker Midfield",bn:"প্লেমেকার মিডফিল্ড"}, by:"MidfieldMaster", votes:97, desc:{en:"Through passing and control",bn:"থ্রু পাস ও কন্ট্রোল"}} ],
+  4: [ {title:{en:"Sweeper Keeper",bn:"সুইপার কিপার"}, by:"KeeperKing", votes:53, desc:{en:"Comes off the line to clear",bn:"বেরিয়ে এসে ক্লিয়ারেন্স"}} ],
+  5: [ {title:{en:"Winger Speed",bn:"উইঙ্গার স্পিড"}, by:"WingWizard", votes:140, desc:{en:"Maximum speed and dribbling",bn:"স্পিড ও ড্রিবলিং সর্বোচ্চ"}} ]
+};
+
+// ---- Translations ----
+const T = {
+  en: {
+    search:"Search players by name...", allPlayers:"All players", noResults:"No players found",
+    height:"Height", weight:"Weight", age:"Age", foot:"Foot",
+    tabOverview:"Overview", tabAttributes:"Attributes", tabSkills:"Skills", tabPositions:"Positions", tabBuilds:"Community Builds",
+    compareTitle:"Compare", close:"Close", compareBtn:"Compare", addCompare:"Add to compare", removeCompare:"Remove from compare",
+    bestSkills:"Top skills", goldNote:"Gold skills are special or strong skills.", posNote:"Rating for this player at each position.",
+    cardRating:(p)=>`${p.name}'s card is rated ${p.ovr}. At max level it reaches ${p.max}.`,
+    selected:(n)=>`${n} selected`, maxThree:"You can compare up to 3 players",
+    minTwo:"Select at least 2 players to compare", buildsTitle:"Community builds (ranked by votes)",
+    noBuilds:"No builds yet", newBuild:"+ Add a new build (prototype: display only)",
+    protoAlert:"This is a prototype. The real form will be added in the next step.",
+    cm:"cm", kg:"kg", yrs:"yrs", left:"Left", right:"Right", feature:"Attribute", cardRow:"Card rating", posRow:"Position",
+    overviewTitle:"Overview", tbc:"", attrNames:{}, skillNames:{}
+  },
+  bn: {
+    search:"খেলোয়াড়ের নাম দিয়ে খুঁজুন...", allPlayers:"সব খেলোয়াড়", noResults:"কিছু পাওয়া যায়নি",
+    height:"উচ্চতা", weight:"ওজন", age:"বয়স", foot:"পা",
+    tabOverview:"ওভারভিউ", tabAttributes:"অ্যাট্রিবিউট", tabSkills:"স্কিল", tabPositions:"পজিশন", tabBuilds:"কমিউনিটি বিল্ড",
+    compareTitle:"তুলনা", close:"বন্ধ করুন", compareBtn:"তুলনা করুন", addCompare:"তুলনায় যোগ করুন", removeCompare:"তুলনা থেকে সরান",
+    bestSkills:"সেরা স্কিল", goldNote:"সোনালি রঙের স্কিল মানে বিশেষ/শক্তিশালী স্কিল।", posNote:"প্রতিটি পজিশনে এই খেলোয়াড়ের রেটিং।",
+    cardRating:(p)=>`${p.name} এর কার্ড রেটিং ${p.ovr}। সর্বোচ্চ লেভেলে পৌঁছালে ${p.max} পর্যন্ত যায়।`,
+    selected:(n)=>`${n} জন নির্বাচিত`, maxThree:"সর্বোচ্চ ৩ জন তুলনা করা যাবে",
+    minTwo:"তুলনার জন্য কমপক্ষে ২ জন নির্বাচন করুন", buildsTitle:"কমিউনিটি বিল্ড (ভোটের ভিত্তিতে)",
+    noBuilds:"এখনো কোনো বিল্ড নেই", newBuild:"+ নতুন বিল্ড যোগ করুন (প্রোটোটাইপে শুধু দেখানো)",
+    protoAlert:"এটা প্রোটোটাইপ। আসল ফর্ম পরের ধাপে যোগ হবে।",
+    cm:"সেমি", kg:"কেজি", yrs:"বছর", left:"বাঁ", right:"ডান", feature:"বৈশিষ্ট্য", cardRow:"কার্ড রেটিং", posRow:"পজিশন",
+    overviewTitle:"ওভারভিউ", tbc:"", attrNames:{}, skillNames:{}
+  }
+};
+
+const ATTR_LABELS = {
+  attack:{en:"Attacking",bn:"আক্রমণ"}, power:{en:"Strength",bn:"শক্তি"},
+  defence:{en:"Defending",bn:"রক্ষণ"}, gk:{en:"Goalkeeping",bn:"গোলরক্ষক"}
+};
+const POS_FILTERS = ["ALL","CF","CMF","LB","RB","RWF","GK"];
+const ATTR_BN = {
+  "Offensive Awareness":"আক্রমণ-বোধ","Ball Control":"বল নিয়ন্ত্রণ","Dribbling":"ড্রিবল","Tight Possession":"টাইট পজেশন",
+  "Low Pass":"নিচু পাস","Lofted Pass":"উঁচু পাস","Finishing":"ফিনিশিং","Heading":"হেডিং","Set Pieces":"সেট পিস","Curl":"কার্ল",
+  "Speed":"গতি","Acceleration":"ত্বরণ","Kicking Power":"শট জোর","Jumping":"লাফ","Physical Contact":"শারীরিক সংঘর্ষ","Balance":"ভারসাম্য","Stamina":"স্ট্যামিনা",
+  "Defensive Awareness":"রক্ষণ-বোধ","Tackling":"ট্যাকলিং","Aggression":"আগ্রাসন","Defensive Engagement":"রক্ষণে যোগ",
+  "GK Awareness":"গোলরক্ষক-বোধ","GK Catching":"ক্যাচিং","GK Deflecting":"ডিফ্লেক্টিং","GK Reflexes":"রিফ্লেক্স"
+};
+
+// ---- State ----
+let lang = "en";
+let filter = "ALL", query = "", current = null, compare = new Set(), votes = {}, tab = "ov";
+
+// ---- Helpers ----
+const $ = id => document.getElementById(id);
+const t = k => T[lang][k];
+const barColor = v => v>=85?"var(--accent)":v>=70?"#f2c14e":"var(--red)";
+const txt = (obj) => typeof obj==="string" ? obj : (obj[lang] || obj.en);
+const attrLabel = k => lang==="bn" ? (ATTR_BN[k]||k) : k;
+const posLabel = p => p==="ALL" ? (lang==="bn"?"সব":"All") : p;
+
+function applyStatic(){
+  document.documentElement.lang = lang;
+  $("q").placeholder = t("search");
+  $("allTitle").textContent = t("allPlayers");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    if(T[lang][key] && typeof T[lang][key] === "string") el.textContent = T[lang][key];
+  });
+  document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang===lang));
+  $("cGo").textContent = t("compareBtn");
+  $("closeCmp").textContent = t("close");
+  document.querySelectorAll("#tabs .tab").forEach(el => el.textContent = t(el.dataset.i18n));
+  $("title").textContent = current && $("detail").style.display==="block" ? current.name : (screenIsCompare() ? t("compareTitle") : "Player Hub");
+  renderChips(); renderGrid(); updateCompareBar();
+  if($("detail").style.display==="block" && current) { openPlayer(current.id, true); }
+}
+function screenIsCompare(){ return $("compareView").style.display==="block"; }
+
+function renderChips(){
+  $("chips").innerHTML = POS_FILTERS.map(p =>
+    `<div class="chip ${p===filter?'on':''}" data-p="${p}">${posLabel(p)}</div>`).join("");
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => { filter = c.dataset.p; renderChips(); renderGrid(); });
+}
+
+function renderGrid(){
+  const list = PLAYERS.filter(p =>
+    (filter==="ALL" || p.pos===filter) &&
+    p.name.toLowerCase().includes(query.toLowerCase()));
+  $("grid").innerHTML = list.map(p => `
+    <div class="card" data-id="${p.id}">
+      <span class="tier">${p.tier}</span>
+      <div class="ovr">${p.ovr}</div>
+      <div class="pos">${p.pos}</div>
+      <div class="name">${p.name}</div>
+      <div class="club">${p.club}</div>
+      <div class="cardcmp"><label><input type="checkbox" data-cmp="${p.id}" ${compare.has(p.id)?'checked':''}> ${lang==="bn"?"তুলনায় যোগ":"Compare"}</label></div>
+    </div>`).join("");
+  $("empty").textContent = t("noResults");
+  $("empty").style.display = list.length ? "none" : "block";
+  document.querySelectorAll(".card").forEach(c => c.onclick = e => {
+    if(e.target.dataset.cmp) return;
+    openPlayer(+c.dataset.id);
+  });
+  document.querySelectorAll("[data-cmp]").forEach(cb => cb.onchange = () => {
+    const id = +cb.dataset.cmp;
+    if(cb.checked){ if(compare.size>=3){ cb.checked=false; alert(t("maxThree")); return; } compare.add(id); }
+    else compare.delete(id);
+    updateCompareBar();
+  });
+}
+
+function updateCompareBar(){
+  $("cbar").style.display = compare.size && !screenIsCompare() ? "flex" : "none";
+  $("cText").textContent = t("selected")(compare.size);
+}
+
+function showList(){
+  $("list").style.display="block"; $("detail").style.display="none"; $("compareView").style.display="none";
+  $("backBtn").style.display="none"; $("title").textContent="Player Hub";
+  current = null;
+  renderGrid(); updateCompareBar();
+}
+
+function openPlayer(id, keepTab){
+  current = PLAYERS.find(p=>p.id===id);
+  $("list").style.display="none"; $("detail").style.display="block"; $("compareView").style.display="none";
+  $("backBtn").style.display="inline"; $("title").textContent=current.name;
+  $("dOvr").textContent=current.ovr; $("dPos").textContent=current.pos;
+  $("dName").textContent=current.name; $("dClub").textContent=current.club;
+  $("dPlaystyle").textContent=current.playstyle;
+  $("sH").textContent=current.h+" "+t("cm");
+  $("sW").textContent=current.w+" "+t("kg");
+  $("sA").textContent=current.age+" "+t("yrs");
+  $("sF").textContent= current.foot==="L"?t("left"):t("right");
+  if(!keepTab) tab="ov";
+  setTab(tab); renderAll(); updateCompareBar();
+  if(!keepTab) window.scrollTo(0,0);
+}
+
+function renderAll(){
+  const p = current;
+  $("p-ov").innerHTML = `
+    <p style="color:var(--muted);line-height:1.6;font-size:14px">${t("cardRating")(p)}</p>
+    <div class="section-title" style="padding:16px 0 8px">${t("bestSkills")}</div>
+    <div class="skills">${p.skills.map((s,i)=>`<span class="skill ${p.gold.includes(i)?'gold':''}">${s}</span>`).join("")}</div>
+    <button class="btn" id="addCmp">${compare.has(p.id)?t("removeCompare"):t("addCompare")}</button>`;
+  $("addCmp").onclick = () => {
+    if(compare.has(p.id)) compare.delete(p.id);
+    else { if(compare.size>=3){alert(t("maxThree")); return;} compare.add(p.id); }
+    updateCompareBar(); renderAll();
+  };
+
+  $("p-at").innerHTML = Object.entries(ATTR_GROUPS).map(([g,keys]) => `
+    <div class="attr-group"><h3>${txt(ATTR_LABELS[g])}</h3>
+      ${keys.map(k => { const v=p.attrs[k]; return `
+        <div class="attr"><span class="lab">${attrLabel(k)}</span>
+          <div class="bar"><i style="width:${Math.min(v,100)}%;background:${barColor(v)}"></i></div>
+          <span class="val">${v}</span></div>`; }).join("")}
+    </div>`).join("");
+
+  $("p-sk").innerHTML = `<div class="skills">${p.skills.map((s,i)=>`<span class="skill ${p.gold.includes(i)?'gold':''}">${s}</span>`).join("")}</div>
+    <p class="note">${t("goldNote")}</p>`;
+
+  $("p-ps").innerHTML = `
+    <div class="pos-grid">${Object.entries(p.positions).map(([k,v])=>
+      `<div class="pcell">${k}<b style="color:${barColor(v)}">${v}</b></div>`).join("")}</div>
+    <p class="note">${t("posNote")}</p>`;
+
+  renderBuilds();
+}
+
+function renderBuilds(){
+  const score = b => b.votes + (votes[b.key]?1:0);
+  const list = (BUILDS[current.id]||[]).map(b=>({...b,key:txt(b.title)+current.id})).sort((a,b)=>score(b)-score(a));
+  $("p-bd").innerHTML = `
+    <div class="section-title" style="padding:0 0 10px">${t("buildsTitle")}</div>
+    ${list.map(b=>{ const on=!!votes[b.key];
+      return `<div class="build"><div class="top"><div><h4>${txt(b.title)}</h4><small>${b.by} · ${txt(b.desc)}</small></div>
+      <button class="vote ${on?'on':''}" data-k="${b.key}">▲ ${score(b)}</button></div></div>`; }).join("")||`<p class="empty">${t("noBuilds")}</p>`}
+    <button class="btn ghost" id="newBuild">${t("newBuild")}</button>`;
+  document.querySelectorAll(".vote").forEach(b => b.onclick = () => { votes[b.dataset.k]=!votes[b.dataset.k]; renderBuilds(); });
+  $("newBuild").onclick = () => alert(t("protoAlert"));
+}
+
+function setTab(tb){
+  tab = tb;
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x.dataset.t===tb));
+  ["ov","at","sk","ps","bd"].forEach(k => $("p-"+k).style.display = k===tb?"block":"none");
+}
+
+function renderCompare(){
+  const ps = PLAYERS.filter(p=>compare.has(p.id));
+  const keys = Object.values(ATTR_GROUPS).flat();
+  $("cmpTable").innerHTML = `<tr><th>${t("feature")}</th>${ps.map(p=>`<th>${p.name}</th>`).join("")}</tr>
+    <tr><td>${t("cardRow")}</td>${ps.map(p=>`<td><b>${p.ovr}</b></td>`).join("")}</tr>
+    <tr><td>${t("posRow")}</td>${ps.map(p=>`<td>${p.pos}</td>`).join("")}</tr>
+    ${keys.map(k=>`<tr><td>${attrLabel(k)}</td>${ps.map(p=>`<td>${p.attrs[k]}</td>`).join("")}</tr>`).join("")}`;
+}
+
+// ---- Events ----
+$("q").oninput = e => { query = e.target.value; renderGrid(); };
+$("backBtn").onclick = showList;
+$("tabs").onclick = e => { if(e.target.dataset.t) setTab(e.target.dataset.t); };
+document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { lang = b.dataset.lang; applyStatic(); if(screenIsCompare()) { $("title").textContent=t("compareTitle"); renderCompare(); } });
+$("cGo").onclick = () => {
+  if(compare.size<2){ alert(t("minTwo")); return; }
+  renderCompare();
+  ["list","detail"].forEach(id=>$(id).style.display="none");
+  $("compareView").style.display="block"; $("backBtn").style.display="inline"; $("title").textContent=t("compareTitle");
+  $("cbar").style.display="none";
+};
+$("closeCmp").onclick = showList;
+
+applyStatic();
+</script>
+</body>
+</html>

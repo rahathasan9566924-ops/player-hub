@@ -591,6 +591,23 @@ $("runImport").onclick=async()=>{
       return x;
     });
   }catch(e){status.textContent="Validation failed: "+e.message;return;}
+  // Check foreign-key parents before writing any batch, preventing predictable partial imports.
+  const parentChecks={
+    player_cards:{field:"konami_id",table:"player_identities",id:"konami_id"},
+    player_card_attributes:{field:"card_id",table:"player_cards",id:"card_id"},
+    player_card_skills:{field:"card_id",table:"player_cards",id:"card_id"},
+    player_card_positions:{field:"card_id",table:"player_cards",id:"card_id"},
+    manager_tactics:{field:"manager_id",table:"managers",id:"manager_id"}
+  };
+  const parent=parentChecks[table];
+  if(parent){
+    const refs=[...new Set(rows.map(r=>r[parent.field]))];
+    const {data:found,error:lookupError}=await DB_CLIENT.from(parent.table).select(parent.id).in(parent.id,refs);
+    if(lookupError){status.textContent="Parent record যাচাই করা যায়নি: "+lookupError.message;return;}
+    const existing=new Set((found||[]).map(r=>r[parent.id]));
+    const missingParents=refs.filter(id=>!existing.has(id));
+    if(missingParents.length){status.textContent="Import বাতিল: "+missingParents.length+"টি parent ID "+parent.table+" টেবিলে নেই। উদাহরণ: "+missingParents.slice(0,5).join(", ");return;}
+  }
   const conflicts=Array.isArray(key)?key.join(","):key;
   const unique=new Set(rows.map(r=>Array.isArray(key)?key.map(k=>r[k]).join("|"):String(r[key])));
   if(unique.size!==rows.length){status.textContent="একই import batch-এ duplicate primary key আছে। আগে duplicate ঠিক করুন।";return;}

@@ -25,5 +25,5 @@ jobs:
           node-version: 20
       - name: Check Player Hub inline JavaScript
         run: node scripts/check-html.mjs
-      - name: Run validator tests
-        run: node --test scripts/validate-catalog.test.mjs
+      - name: Run catalog tooling tests
+        run: node --test scripts/validate-catalog.test.mjs scripts/prepare-supabase-import.test.mjs

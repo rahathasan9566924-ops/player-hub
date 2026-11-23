@@ -583,10 +583,11 @@ $("runImport").onclick=async()=>{
       }
       if(table==="managers"&&(!x.name||!x.formation)) throw new Error("Manager row "+(i+1)+": name ও formation আবশ্যক।");
       for(const n of ["overall","attribute_value","proficiency"]) if(x[n]!==undefined&&x[n]!==""){x[n]=Number(x[n]);if(!Number.isFinite(x[n]))throw new Error("Row "+(i+1)+": "+n+" সংখ্যা হতে হবে।");}
-      for(const b of ["published"]) if(x[b]!==undefined&&x[b]!=="")x[b]=toBool(x[b]);
+      for(const k of Object.keys(x)) if(x[k]==="") x[k]=null;
+      if(x.published!==undefined&&x.published!==null)x.published=toBool(x.published);
       if(typeof x.payload==="string"&&x.payload.trim()){x.payload=JSON.parse(x.payload);}
-      if(x.published===undefined)x.published=false;
-      if(x.verification===undefined)x.verification="pending";
+      if(x.published==null)x.published=false;
+      if(x.verification==null)x.verification="pending";
       return x;
     });
   }catch(e){status.textContent="Validation failed: "+e.message;return;}

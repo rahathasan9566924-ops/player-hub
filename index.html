@@ -313,7 +313,7 @@ function renderGrid(){
     </div>`).join("");
   $("empty").textContent = t("noResults");
   $("empty").style.display = list.length ? "none" : "block";
-  document.querySelectorAll(".card").forEach(c => c.onclick = e => {
+  $("grid").querySelectorAll(".card").forEach(c => c.onclick = e => {
     if(e.target.dataset.cmp) return;
     openPlayer(+c.dataset.id);
   });

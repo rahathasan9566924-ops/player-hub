@@ -452,7 +452,10 @@ async function connectPlayerDatabase(){
     });
     PLAYERS=rows; MANAGERS=managerResult.data||[]; compare.clear(); current=null; showList(); renderManagers();
     status.textContent="Connected. "+rows.length+" published player cards and "+MANAGERS.length+" published managers loaded.";
-    localStorage.setItem("zone_sb_url",url); localStorage.setItem("zone_sb_key",key);
+    // Keep only the non-secret project URL. Never persist API keys in browser storage.
+    localStorage.setItem("zone_sb_url",url);
+    localStorage.removeItem("zone_sb_key");
+    $("sbKey").value="";
   }catch(e){ status.textContent="Connection failed: "+(e.message||"Check URL, key, table and RLS settings."); }
 }
 function escapeHTML(value){return String(value??"").replace(/[&<>"\x27]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[ch]));}
@@ -466,7 +469,9 @@ function showManagersTab(){ $("playerContent").style.display="none"; $("managerC
 $("playersTab").onclick=showPlayersTab; $("managersTab").onclick=showManagersTab;
 $("connectDb").onclick=connectPlayerDatabase;
 $("sbUrl").value=localStorage.getItem("zone_sb_url")||"";
-$("sbKey").value=localStorage.getItem("zone_sb_key")||"";
+// API keys are intentionally not restored from localStorage.
+localStorage.removeItem("zone_sb_key");
+$("sbKey").value="";
 
 applyStatic();
 </script>

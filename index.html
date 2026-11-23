@@ -79,6 +79,7 @@
   .note{font-size:12px;color:var(--muted);padding:10px 16px}
   .cardcmp{font-size:12px;color:var(--muted);margin-top:8px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -93,6 +94,16 @@
 
 <!-- LIST VIEW -->
 <section id="list">
+  <div style="padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)">
+    <details id="dbSettings"><summary style="cursor:pointer;color:var(--accent);font-weight:600">Connect Player Database / ডেটাবেইস সংযোগ</summary>
+      <div style="display:grid;gap:8px;padding-top:12px">
+        <input id="sbUrl" type="url" placeholder="Supabase Project URL" autocomplete="url" style="padding:10px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line)">
+        <input id="sbKey" type="password" placeholder="Publishable key (or legacy anon key)" autocomplete="off" style="padding:10px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line)">
+        <button class="btn" id="connectDb" style="margin:0">Connect Database</button>
+        <small id="dbStatus" role="status" style="color:var(--muted)">Demo records are shown until a database is connected. Never enter a service-role/secret key.</small>
+      </div>
+    </details>
+  </div>
   <div class="search"><input id="q" autocomplete="off"></div>
   <div class="chips" id="chips"></div>
   <div class="section-title" id="allTitle"></div>
@@ -152,7 +163,7 @@ const ATTR_GROUPS = {
   gk:      ["GK Awareness","GK Catching","GK Deflecting","GK Reflexes"]
 };
 
-const PLAYERS = [
+const SAMPLE_PLAYERS = [
   { id:1, name:"Marco Vellan", club:"Northbridge FC", pos:"LB", ovr:87, max:94, tier:"B", h:178, w:74, age:25, foot:"L", playstyle:"Offensive Fullback · The Destroyer",
     attrs:{ "Offensive Awareness":79,"Ball Control":80,"Dribbling":84,"Tight Possession":81,"Low Pass":80,"Lofted Pass":87,"Finishing":76,"Heading":71,"Set Pieces":87,"Curl":90,
             "Speed":92,"Acceleration":94,"Kicking Power":88,"Jumping":83,"Physical Contact":86,"Balance":92,"Stamina":90,
@@ -189,6 +200,8 @@ const PLAYERS = [
     skills:["Outside Curler","Flip Flap","Quick Step","Super-Sub"], gold:[0,3],
     positions:{ RWF:90, LWF:88, AMF:80, RMF:82, CF:78, LMF:80, GK:8 } }
 ];
+
+let PLAYERS = SAMPLE_PLAYERS;
 
 const BUILDS = {
   1: [ {title:{en:"Attacking Fullback",bn:"অ্যাটাকিং ফুলব্যাক"}, by:"NurGamer", votes:128, desc:{en:"Overlapping runs, booster: Agility +4",bn:"ওভারল্যাপিং রান, বুস্টার: Agility +4"}},
@@ -408,6 +421,36 @@ $("cGo").onclick = () => {
   $("cbar").style.display="none";
 };
 $("closeCmp").onclick = showList;
+
+
+async function connectPlayerDatabase(){
+  const url=$("sbUrl").value.trim(), key=$("sbKey").value.trim(), status=$("dbStatus");
+  if(!url || !key){ status.textContent="Project URL এবং Publishable/anon key দিন।"; return; }
+  if(!window.supabase?.createClient){ status.textContent="Database library load হয়নি। ইন্টারনেট সংযোগ পরীক্ষা করুন।"; return; }
+  status.textContent="Connecting…";
+  try{
+    const client=window.supabase.createClient(url,key);
+    const {data,error}=await client.from("zone_player_cards")
+      .select("id,source_record_id,card_name,card_type,position,playstyle,overall,max_overall,attributes,skills,positions,published,zone_player_identities(canonical_name,nationality,height_cm,strong_foot)")
+      .eq("published",true).order("overall",{ascending:false});
+    if(error) throw error;
+    const rows=(data||[]).map((r,i)=>{
+      const identity=Array.isArray(r.zone_player_identities)?r.zone_player_identities[0]:r.zone_player_identities;
+      return {id:r.id||r.source_record_id||i+1,name:identity?.canonical_name||r.card_name||"Unknown player",
+        club:"",pos:r.position,ovr:r.overall??0,max:r.max_overall??r.overall??0,tier:r.card_type||"eFootball",
+        h:identity?.height_cm??0,w:0,age:0,foot:identity?.strong_foot==="Left"?"L":"R",
+        playstyle:r.playstyle||"",attrs:r.attributes||{},skills:Array.isArray(r.skills)?r.skills:[],
+        gold:[],positions:r.positions||{}};
+    });
+    if(!rows.length){ status.textContent="Connection successful, but no published player cards were found. Import and publish verified records first."; return; }
+    PLAYERS=rows; compare.clear(); current=null; showList();
+    status.textContent="Connected successfully. "+rows.length+" published player cards loaded.";
+    localStorage.setItem("zone_sb_url",url); localStorage.setItem("zone_sb_key",key);
+  }catch(e){ status.textContent="Connection failed: "+(e.message||"Check URL, key, table and RLS settings."); }
+}
+$("connectDb").onclick=connectPlayerDatabase;
+$("sbUrl").value=localStorage.getItem("zone_sb_url")||"";
+$("sbKey").value=localStorage.getItem("zone_sb_key")||"";
 
 applyStatic();
 </script>

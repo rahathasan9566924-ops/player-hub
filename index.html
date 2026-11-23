@@ -447,25 +447,27 @@ async function connectPlayerDatabase(){
     const cards=results[0].data||[], identities=results[1].data||[], managers=results[2].data||[];
     const identityById=new Map(identities.map(x=>[String(x.konami_id),x]));
     const num=(...values)=>{ for(const v of values){ if(typeof v==="number"&&Number.isFinite(v)) return v; if(typeof v==="string"){ const n=parseInt(v,10); if(Number.isFinite(n)) return n; } } return 0; };
+    const matchedIdentityIds=new Set(cards.map(r=>String(r.player_id)).filter(id=>identityById.has(id)));
     const cardRows=cards.map((r,i)=>{
       const p=r.payload||{}, identity=identityById.get(String(r.player_id))||{}, details=identity.payload||{};
       const attrs=Object.fromEntries(Object.values(ATTR_GROUPS).flat().map(k=>[k,"—"]));
       Object.assign(attrs,p.attributes||p.attrs||{});
+      const foot=String(p.foot||details.foot||"").toLowerCase();
       return {id:200000+i,name:r.name||p.name||identity.name||"Unknown player",club:p.team||details.team||"",pos:r.position||identity.position||"—",
         ovr:r.overall??p.overall??p.ovr??"—",max:p.max_overall??p.max??r.overall??"—",tier:r.card_type||"eFootball",
         h:num(p.height_cm,p.height,details.height),w:num(p.weight_kg,p.weight,details.weight),age:num(p.age,details.age),
-        foot:(p.foot||details.foot)==="Left"?"L":(p.foot||details.foot)==="Both"?"B":(p.foot||details.foot)==="Right"?"R":"",
+        foot:foot==="left"?"L":foot==="both"?"B":foot==="right"?"R":"",
         playstyle:p.playstyle||"",attrs:attrs,skills:Array.isArray(p.skills)?p.skills:[],gold:Array.isArray(p.gold)?p.gold:[],positions:p.positions||p.position_ratings||{}};
     });
-    const identityRows=identities.map((r,i)=>{
-      const p=r.payload||{};
+    const identityRows=identities.filter(r=>!cards.some(c=>String(c.player_id)===String(r.konami_id))).map((r,i)=>{
+      const p=r.payload||{}, foot=String(p.foot||"").toLowerCase();
       const attrs=Object.fromEntries(Object.values(ATTR_GROUPS).flat().map(k=>[k,"—"]));
-      return {id:100000+i,name:r.name||p.name||"Unknown player",club:p.team||"",pos:r.position||p.pos||"—",ovr:"—",max:"—",tier:"Player",
-        h:num(p.height_cm,p.height),w:num(p.weight_kg,p.weight),age:num(p.age),foot:p.foot==="Left"?"L":p.foot==="Both"?"B":p.foot==="Right"?"R":"",
+      return {id:100000+i,name:r.name||p.name||"Unknown player",club:[p.team,p.country||r.country].filter(Boolean).join(" · "),pos:r.position||p.pos||"—",ovr:"—",max:"—",tier:"Player identity",
+        h:num(p.height_cm,p.height),w:num(p.weight_kg,p.weight),age:num(p.age),foot:foot==="left"?"L":foot==="both"?"B":foot==="right"?"R":"",
         playstyle:"",attrs:attrs,skills:[],gold:[],positions:{}};
     });
     MANAGERS=managers.map(m=>{ const p=m.payload||{}; return Object.assign({},m,{nationality:p.nationality||"",attacking_playstyle:m.playstyle||p.attacking_playstyle||p.playstyle||"",build_up:p.build_up||p.buildUp||"",defensive_playstyle:p.defensive_playstyle||p.defensivePlaystyle||""}); });
-    PLAYERS=cardRows.length?cardRows:identityRows;
+    PLAYERS=[...cardRows,...identityRows];
     compare.clear(); current=null; showList(); renderManagers();
     status.textContent=cardRows.length?"Connected: "+cardRows.length+" player cards, "+identities.length+" identities, "+MANAGERS.length+" managers.":"Connected: "+identities.length+" player identities and "+MANAGERS.length+" managers. Card ratings and detailed game stats are not yet in the database.";
     localStorage.setItem("zone_sb_url",url); $("sbKey").value="";

@@ -82,9 +82,13 @@ test('rejects duplicate player card identifiers', async () => {
 test('rejects impossible overall ratings and malformed dates', async () => {
   const payload = baseCatalog();
   payload.players[0].ovr = 125;
+  payload.players[0].height = 300;
+  payload.players[0].attributes = { speed: 140 };
   payload.managers[0].retrievedAt = '2026-02-31';
   const result = await runValidator(payload);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /players\[0\]\.ovr/);
+  assert.match(result.stderr, /players\[0\]\.height/);
+  assert.match(result.stderr, /players\[0\]\.attributes\.speed/);
   assert.match(result.stderr, /managers\[0\]\.retrievedAt/);
 });

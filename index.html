@@ -368,7 +368,7 @@ function renderAll(){
 
   $("p-at").innerHTML = Object.entries(ATTR_GROUPS).map(([g,keys]) => `
     <div class="attr-group"><h3>${txt(ATTR_LABELS[g])}</h3>
-      ${keys.map(k => { const v=p.attrs[k]??"—"; const width=typeof v==="number"?Math.min(v,100):0; return `
+      ${keys.map(k => { const v=p.attrs[k]??"—"; const width=typeof v==="number"?(typeof v==="number"?Math.min(v,100):0):0; return `
         <div class="attr"><span class="lab">${attrLabel(k)}</span>
           <div class="bar"><i style="width:${width}%;background:${barColor(typeof v==="number"?v:0)}"></i></div>
           <span class="val">${v}</span></div>`; }).join("")}
@@ -379,7 +379,7 @@ function renderAll(){
 
   $("p-ps").innerHTML = `
     <div class="pos-grid">${Object.entries(p.positions).map(([k,v])=>
-      `<div class="pcell">${k}<b style="color:${barColor(v)}">${v}</b></div>`).join("")}</div>
+      `<div class="pcell">${k}<b style="color:${barColor(typeof v==="number"?v:0)}">${v}</b></div>`).join("")}</div>
     <p class="note">${t("posNote")}</p>`;
 
   renderBuilds();

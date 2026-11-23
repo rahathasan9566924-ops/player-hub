@@ -1,0 +1,64 @@
+{
+  "source": {
+    "name": "Replace with permitted dataset name",
+    "url": "https://example.org/dataset",
+    "reusePermission": "not_confirmed"
+  },
+  "players": [
+    {
+      "cardId": "replace-with-stable-card-id",
+      "playerId": "replace-with-player-identity-id",
+      "name": "Replace with sourced player name",
+      "cardName": "",
+      "cardType": "",
+      "pack": "",
+      "releaseDate": null,
+      "databaseVersion": "",
+      "pos": "CF",
+      "playstyle": "",
+      "ovr": null,
+      "maxOvr": null,
+      "age": null,
+      "height": null,
+      "weight": null,
+      "foot": "",
+      "nationality": "",
+      "club": "",
+      "league": "",
+      "image": "",
+      "attributes": {},
+      "skills": [],
+      "positions": {},
+      "source": "Replace with source name",
+      "sourceUrl": "https://example.org/record",
+      "retrievedAt": "2026-11-23",
+      "verification": "unverified",
+      "notes": ""
+    }
+  ],
+  "managers": [
+    {
+      "managerId": "replace-with-stable-manager-id",
+      "name": "Replace with sourced manager name",
+      "team": "",
+      "nationality": "",
+      "formation": "",
+      "attackingPlaystyle": "",
+      "buildUp": "",
+      "attackingArea": "",
+      "positioning": "",
+      "defensivePlaystyle": "",
+      "containmentArea": "",
+      "pressuring": "",
+      "defensiveLine": null,
+      "compactness": null,
+      "boosters": [],
+      "linkUp": [],
+      "source": "Replace with source name",
+      "sourceUrl": "https://example.org/record",
+      "retrievedAt": "2026-11-23",
+      "verification": "unverified",
+      "notes": ""
+    }
+  ]
+}

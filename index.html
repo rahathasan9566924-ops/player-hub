@@ -449,17 +449,20 @@ async function connectPlayerDatabase(){
     const num=(...values)=>{ for(const v of values){ if(typeof v==="number"&&Number.isFinite(v)) return v; if(typeof v==="string"){ const n=parseInt(v,10); if(Number.isFinite(n)) return n; } } return 0; };
     const cardRows=cards.map((r,i)=>{
       const p=r.payload||{}, identity=identityById.get(String(r.player_id))||{}, details=identity.payload||{};
+      const attrs=Object.fromEntries(Object.values(ATTR_GROUPS).flat().map(k=>[k,"—"]));
+      Object.assign(attrs,p.attributes||p.attrs||{});
       return {id:i+1,name:r.name||p.name||identity.name||"Unknown player",club:p.team||details.team||"",pos:r.position||identity.position||"—",
         ovr:r.overall??p.overall??p.ovr??"—",max:p.max_overall??p.max??r.overall??"—",tier:r.card_type||"eFootball",
         h:num(p.height_cm,p.height,details.height),w:num(p.weight_kg,p.weight,details.weight),age:num(p.age,details.age),
         foot:(p.foot||details.foot)==="Left"?"L":(p.foot||details.foot)==="Both"?"B":(p.foot||details.foot)==="Right"?"R":"",
-        playstyle:p.playstyle||"",attrs:p.attributes||p.attrs||{},skills:Array.isArray(p.skills)?p.skills:[],gold:Array.isArray(p.gold)?p.gold:[],positions:p.positions||p.position_ratings||{}};
+        playstyle:p.playstyle||"",attrs:attrs,skills:Array.isArray(p.skills)?p.skills:[],gold:Array.isArray(p.gold)?p.gold:[],positions:p.positions||p.position_ratings||{}};
     });
     const identityRows=identities.map((r,i)=>{
       const p=r.payload||{};
+      const attrs=Object.fromEntries(Object.values(ATTR_GROUPS).flat().map(k=>[k,"—"]));
       return {id:i+1,name:r.name||p.name||"Unknown player",club:p.team||"",pos:r.position||p.pos||"—",ovr:"—",max:"—",tier:"Player",
         h:num(p.height_cm,p.height),w:num(p.weight_kg,p.weight),age:num(p.age),foot:p.foot==="Left"?"L":p.foot==="Both"?"B":p.foot==="Right"?"R":"",
-        playstyle:"",attrs:{},skills:[],gold:[],positions:{}};
+        playstyle:"",attrs:attrs,skills:[],gold:[],positions:{}};
     });
     MANAGERS=managers.map(m=>{ const p=m.payload||{}; return Object.assign({},m,{nationality:p.nationality||"",attacking_playstyle:m.playstyle||p.attacking_playstyle||p.playstyle||"",build_up:p.build_up||p.buildUp||"",defensive_playstyle:p.defensive_playstyle||p.defensivePlaystyle||""}); });
     PLAYERS=cardRows.length?cardRows:identityRows;

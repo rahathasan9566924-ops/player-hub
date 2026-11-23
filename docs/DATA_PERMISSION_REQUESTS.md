@@ -78,3 +78,32 @@ Thank you.
 | KONAMI | Yes | No | No | None |
 
 Do not change a source to permitted until written permission or an applicable licence is saved and reviewed. A public download button, public repository, or attribution statement alone is not proof of redistribution rights.
+
+
+## 4. Verified contact routes (checked 2026-11-23)
+
+### PlayersDB
+- Official project page: https://playersdb.app/about
+- The About page directs business inquiries, feedback, and database corrections to the contact email shown in the website footer.
+- Use only the address displayed on the official site at the time of sending. Do not guess an email address.
+- Ask for a written licence covering database storage, adaptation, public display, and any commercial use. Their About page describes the data as community-maintained and says some data may originate from third parties, so they may not own every field.
+
+### eFootball Managers dataset maintainer
+- Repository: https://github.com/amine250/efootball-managers
+- Public Issues tab: https://github.com/amine250/efootball-managers/issues
+- The repository README explains the manager dataset, but the repository currently has no licence file visible in its root. A polite public issue asking the maintainer to provide a licence or private contact route is the available project-native route. Do not post personal details or any private account information.
+
+### KONAMI
+- Official Asia support directory: https://www.konami.com/games/asia/en/pages/support/
+- The page links to the eFootball enquiry form for console/PC. That form explicitly says mobile enquiries will not be answered and should be submitted through in-game support.
+- For an Android/iOS player, use the game's in-app support route for a general enquiry, but ask whether the request can be forwarded to the licensing/legal or business team. This is not a guarantee that support can grant a licence.
+- Official eFootball enquiry page: https://www.konami.com/efootball/support/cs/en/
+
+## 5. Sending status and safeguards
+
+No request has been sent. Before any message is submitted:
+1. A parent/guardian should review the request and supervise the contact.
+2. Use a project contact address controlled by the owner, not a home address, phone number, game account ID, password, or other personal details.
+3. Do not attach identity documents, payment information, or private account screenshots.
+4. Save the reply and exact licence terms. A friendly reply or acknowledgement is not permission unless it clearly authorizes the proposed reuse.
+5. If the recipient cannot license third-party data, do not treat their permission as covering that third-party material.

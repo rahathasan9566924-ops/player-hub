@@ -63,3 +63,16 @@ A source may move from research to import only after all of the following are do
 - No existing Supabase data has been changed.
 - The manager source is structurally promising but not legally cleared for reuse.
 - The PlayersDB source is large and relevant but bulk reuse permission is not established.
+
+
+## Additional KONAMI terms review (2026-11-23)
+
+The current KONAMI eFootball Terms of Use state that game materials are protected intellectual property, grant access for personal non-commercial use, and prohibit systematically downloading and storing Materials to create a database. They also prohibit scraping/data mining Materials without express prior written consent. See the official terms: https://legal.konami.com/games/efootball/terms/tou/202603/en-us.html (sections 1 and 2).
+
+KONAMI's official notice dated 2026-10-23 also warns against reverse engineering, modified game distributions, and unauthorized programs related to game operation/content: https://www.konami.com/efootball/en/topic/news/6033
+
+**Result:** Do not collect card data by reverse engineering, scraping KONAMI, automating game interaction, or systematically extracting game materials. Obtain explicit written permission or an approved licensed feed before building a bulk card catalogue. This is a practical project safeguard, not legal advice.
+
+PlayersDB publicly offers downloadable CSV/JSONL files and describes its dataset as community-maintained, but the pages inspected do not establish a clear redistribution licence for our intended use. Keep it in research-only status until the maintainer confirms rights in writing.
+
+Permission-request drafts and a status tracker are in `docs/DATA_PERMISSION_REQUESTS.md`. No request has been sent and no third-party data has been imported.

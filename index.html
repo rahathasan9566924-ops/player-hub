@@ -363,7 +363,7 @@ function renderAll(){
 
   $("p-at").innerHTML = Object.entries(ATTR_GROUPS).map(([g,keys]) => `
     <div class="attr-group"><h3>${txt(ATTR_LABELS[g])}</h3>
-      ${keys.map(k => { const v=p.attrs[k]; return `
+      ${keys.map(k => { const v=p.attrs[k]??0; return `
         <div class="attr"><span class="lab">${attrLabel(k)}</span>
           <div class="bar"><i style="width:${Math.min(v,100)}%;background:${barColor(v)}"></i></div>
           <span class="val">${v}</span></div>`; }).join("")}
@@ -436,7 +436,7 @@ async function connectPlayerDatabase(){
     if(error) throw error;
     const rows=(data||[]).map((r,i)=>{
       const identity=Array.isArray(r.zone_player_identities)?r.zone_player_identities[0]:r.zone_player_identities;
-      return {id:r.id||r.source_record_id||i+1,name:identity?.canonical_name||r.card_name||"Unknown player",
+      return {id:i+1,name:identity?.canonical_name||r.card_name||"Unknown player",
         club:"",pos:r.position,ovr:r.overall??0,max:r.max_overall??r.overall??0,tier:r.card_type||"eFootball",
         h:identity?.height_cm??0,w:0,age:0,foot:identity?.strong_foot==="Left"?"L":"R",
         playstyle:r.playstyle||"",attrs:r.attributes||{},skills:Array.isArray(r.skills)?r.skills:[],

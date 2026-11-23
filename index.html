@@ -466,7 +466,7 @@ async function connectPlayerDatabase(){
       const attrs=blankAttrs(); Object.assign(attrs,p.attributes||p.attrs||{});
       const foot=String(p.foot||details.foot||"").toLowerCase();
       return {id:200000+i,name:r.name||p.name||identity.name||"Unknown player",club:p.team||details.team||"",pos:r.position||identity.position||"—",
-        ovr:r.overall??p.overall??p.ovr??"—",max:p.max_overall??p.max??r.overall??"—",tier:r.card_type||"eFootball",
+        ovr:r.overall??p.overall??p.ovr??"—",max:p.max_overall??p.max??r.overall??"—",tier:p.record_kind==="real_world_football_player_not_efootball_card"?"Football player":(r.card_type||"eFootball"),
         h:num(p.height_cm,p.height,details.height),w:num(p.weight_kg,p.weight,details.weight),age:num(p.age,details.age),
         foot:foot==="left"?"L":foot==="both"?"B":foot==="right"?"R":"",
         playstyle:p.playstyle||"",attrs,skills:Array.isArray(p.skills)?p.skills:[],gold:Array.isArray(p.gold)?p.gold:[],positions:p.positions||p.position_ratings||{}};

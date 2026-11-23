@@ -225,7 +225,7 @@ const T = {
     tabOverview:"Overview", tabAttributes:"Attributes", tabSkills:"Skills", tabPositions:"Positions", tabBuilds:"Community Builds",
     compareTitle:"Compare", close:"Close", compareBtn:"Compare", addCompare:"Add to compare", removeCompare:"Remove from compare",
     bestSkills:"Top skills", goldNote:"Gold skills are special or strong skills.", posNote:"Rating for this player at each position.",
-    cardRating:(p)=>`${p.name}'s card is rated ${p.ovr}. At max level it reaches ${p.max}.`,
+    cardRating:(p)=>p.ovr==="—"||p.ovr==null?`${p.name}: player identity loaded. Card rating and detailed game-card data are not yet available.`:`${p.name} card rating is ${p.ovr}. Maximum rating: ${p.max}.`,
     selected:(n)=>`${n} selected`, maxThree:"You can compare up to 3 players",
     minTwo:"Select at least 2 players to compare", buildsTitle:"Community builds (ranked by votes)",
     noBuilds:"No builds yet", newBuild:"+ Add a new build (prototype: display only)",
@@ -239,7 +239,7 @@ const T = {
     tabOverview:"ওভারভিউ", tabAttributes:"অ্যাট্রিবিউট", tabSkills:"স্কিল", tabPositions:"পজিশন", tabBuilds:"কমিউনিটি বিল্ড",
     compareTitle:"তুলনা", close:"বন্ধ করুন", compareBtn:"তুলনা করুন", addCompare:"তুলনায় যোগ করুন", removeCompare:"তুলনা থেকে সরান",
     bestSkills:"সেরা স্কিল", goldNote:"সোনালি রঙের স্কিল মানে বিশেষ/শক্তিশালী স্কিল।", posNote:"প্রতিটি পজিশনে এই খেলোয়াড়ের রেটিং।",
-    cardRating:(p)=>`${p.name} এর কার্ড রেটিং ${p.ovr}। সর্বোচ্চ লেভেলে পৌঁছালে ${p.max} পর্যন্ত যায়।`,
+    cardRating:(p)=>p.ovr==="—"||p.ovr==null?`${p.name}: খেলোয়াড়ের পরিচিতি পাওয়া গেছে, তবে কার্ড রেটিং ও বিস্তারিত গেম ডেটা এখনো নেই।`:`${p.name} এর কার্ড রেটিং ${p.ovr}। সর্বোচ্চ লেভেলে পৌঁছালে ${p.max} পর্যন্ত যায়।`,
     selected:(n)=>`${n} জন নির্বাচিত`, maxThree:"সর্বোচ্চ ৩ জন তুলনা করা যাবে",
     minTwo:"তুলনার জন্য কমপক্ষে ২ জন নির্বাচন করুন", buildsTitle:"কমিউনিটি বিল্ড (ভোটের ভিত্তিতে)",
     noBuilds:"এখনো কোনো বিল্ড নেই", newBuild:"+ নতুন বিল্ড যোগ করুন (প্রোটোটাইপে শুধু দেখানো)",
@@ -304,21 +304,21 @@ function renderGrid(){
     p.name.toLowerCase().includes(query.toLowerCase()));
   $("grid").innerHTML = list.map(p => `
     <div class="card" data-id="${p.id}">
-      <span class="tier">${p.tier}</span>
+      <span class="tier">${escapeHTML(p.tier||"Player")}</span>
       <div class="ovr">${p.ovr??"—"}</div>
-      <div class="pos">${p.pos}</div>
-      <div class="name">${p.name}</div>
-      <div class="club">${p.club}</div>
+      <div class="pos">${escapeHTML(p.pos||"—")}</div>
+      <div class="name">${escapeHTML(p.name)}</div>
+      <div class="club">${escapeHTML(p.club||"")}</div>
       <div class="cardcmp"><label><input type="checkbox" data-cmp="${p.id}" ${compare.has(p.id)?'checked':''}> ${lang==="bn"?"তুলনায় যোগ":"Compare"}</label></div>
     </div>`).join("");
   $("empty").textContent = t("noResults");
   $("empty").style.display = list.length ? "none" : "block";
   $("grid").querySelectorAll(".card").forEach(c => c.onclick = e => {
-    if(e.target.dataset.cmp) return;
-    openPlayer(+c.dataset.id);
+    if(e.target.dataset.cmp!==undefined) return;
+    openPlayer(Number(c.dataset.id));
   });
   document.querySelectorAll("[data-cmp]").forEach(cb => cb.onchange = () => {
-    const id = +cb.dataset.cmp;
+    const id = Number(cb.dataset.cmp);
     if(cb.checked){ if(compare.size>=3){ cb.checked=false; alert(t("maxThree")); return; } compare.add(id); }
     else compare.delete(id);
     updateCompareBar();
@@ -368,9 +368,9 @@ function renderAll(){
 
   $("p-at").innerHTML = Object.entries(ATTR_GROUPS).map(([g,keys]) => `
     <div class="attr-group"><h3>${txt(ATTR_LABELS[g])}</h3>
-      ${keys.map(k => { const v=p.attrs[k]??0; return `
+      ${keys.map(k => { const v=p.attrs[k]??"—"; const width=typeof v==="number"?Math.min(v,100):0; return `
         <div class="attr"><span class="lab">${attrLabel(k)}</span>
-          <div class="bar"><i style="width:${Math.min(v,100)}%;background:${barColor(v)}"></i></div>
+          <div class="bar"><i style="width:${width}%;background:${barColor(typeof v==="number"?v:0)}"></i></div>
           <span class="val">${v}</span></div>`; }).join("")}
     </div>`).join("");
 
@@ -410,7 +410,7 @@ function renderCompare(){
   $("cmpTable").innerHTML = `<tr><th>${t("feature")}</th>${ps.map(p=>`<th>${p.name}</th>`).join("")}</tr>
     <tr><td>${t("cardRow")}</td>${ps.map(p=>`<td><b>${p.ovr}</b></td>`).join("")}</tr>
     <tr><td>${t("posRow")}</td>${ps.map(p=>`<td>${p.pos}</td>`).join("")}</tr>
-    ${keys.map(k=>`<tr><td>${attrLabel(k)}</td>${ps.map(p=>`<td>${p.attrs[k]}</td>`).join("")}</tr>`).join("")}`;
+    ${keys.map(k=>`<tr><td>${attrLabel(k)}</td>${ps.map(p=>`<td>${p.attrs[k]??"—"}</td>`).join("")}</tr>`).join("")}`;
 }
 
 // ---- Events ----

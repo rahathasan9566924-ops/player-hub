@@ -104,6 +104,27 @@
       </div>
     </details>
   </div>
+
+  <section id="adminPanel" style="margin:12px 16px;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px">
+    <h2 style="font-size:17px;margin-bottom:8px">Admin Dashboard</h2>
+    <p id="adminStatus" class="note" style="padding:4px 0 10px">Sign in with your existing administrator account.</p>
+    <div id="adminLogin" style="display:grid;gap:8px">
+      <input id="adminEmail" type="email" placeholder="Existing admin email" autocomplete="username" style="padding:11px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line)">
+      <input id="adminPassword" type="password" placeholder="Password" autocomplete="current-password" style="padding:11px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line)">
+      <button class="btn" id="adminSignIn" style="margin:0">Sign in</button>
+    </div>
+    <div id="adminTools" style="display:none;gap:9px;margin-top:10px">
+      <label style="font-size:13px;color:var(--muted)">Import destination
+        <select id="importTable" style="display:block;width:100%;margin-top:5px;padding:10px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line)">
+          <option value="player_identities">Player identities</option><option value="players">Legacy player cards</option><option value="player_cards">Detailed player cards</option><option value="player_card_attributes">Card attributes</option><option value="player_card_skills">Card skills</option><option value="player_card_positions">Card positions</option><option value="managers">Managers</option><option value="manager_tactics">Manager tactics</option><option value="data_sources">Data sources</option><option value="media_assets">Media assets</option>
+        </select>
+      </label>
+      <textarea id="importJson" rows="8" placeholder='Paste a JSON object or array, for example: [{"konami_id":"...","name":"...","position":"CF","country":"...","published":true}]' style="width:100%;padding:11px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line);font:13px monospace"></textarea>
+      <p class="note" style="padding:0">Only import data you have permission to use. Use verified sources. Related card attributes, skills and positions require an existing card_id.</p>
+      <button class="btn" id="runImport" style="margin:0">Validate and import JSON</button>
+      <button class="btn ghost" id="adminSignOut" style="margin:0">Sign out</button>
+    </div>
+  </section>
   <div style="display:flex;gap:8px;padding:12px 16px"><button class="btn" id="playersTab" style="margin:0">Players</button><button class="btn" id="managersTab" style="margin:0">Managers</button></div>
   <div id="playerContent">
   <div class="search"><input id="q" autocomplete="off"></div>
@@ -387,6 +408,7 @@ $("closeCmp").onclick = showList;
 
 const SUPABASE_URL = "https://zaqdudfatgtvlyoigpnn.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_PpZyM0icC-fRSeU9lUkjIg_fH4wLqvJ";
+let DB_CLIENT = null;
 async function connectPlayerDatabase(){
   const url=$("sbUrl").value.trim()||SUPABASE_URL;
   const key=$("sbKey").value.trim()||SUPABASE_PUBLISHABLE_KEY;
@@ -395,6 +417,7 @@ async function connectPlayerDatabase(){
   status.textContent="Connecting…";
   try{
     const client=window.supabase.createClient(url,key);
+    DB_CLIENT=client;
     const results=await Promise.all([
       client.from("players").select("player_id,name,position,overall,card_type,payload").eq("published",true).order("overall",{ascending:false}),
       client.from("player_identities").select("konami_id,name,position,country,payload").eq("published",true).order("name"),
@@ -454,6 +477,52 @@ async function connectPlayerDatabase(){
     localStorage.setItem("zone_sb_url",url); $("sbKey").value="";
   }catch(e){ status.textContent="Connection failed: "+(e.message||"Check publishable key, table permissions and RLS."); }
 }
+
+async function refreshAdminSession(){
+  const status=$("adminStatus"), login=$("adminLogin"), toolsBox=$("adminTools");
+  if(!DB_CLIENT){ status.textContent="Connect the database first."; login.style.display="grid"; toolsBox.style.display="none"; return; }
+  const {data:{session}}=await DB_CLIENT.auth.getSession();
+  if(!session){ status.textContent="Sign in with your existing administrator account."; login.style.display="grid"; toolsBox.style.display="none"; return; }
+  const {data,error}=await DB_CLIENT.rpc("is_current_user_admin");
+  if(error || data!==true){ status.textContent="This signed-in account is not confirmed as an administrator. No admin access granted."; login.style.display="none"; toolsBox.style.display="none"; return; }
+  status.textContent="Administrator verified. You can import authorized records into the catalog.";
+  login.style.display="none"; toolsBox.style.display="grid";
+}
+$("adminSignIn").onclick=async()=>{
+  if(!DB_CLIENT){ $("adminStatus").textContent="Connect the database first."; return; }
+  const email=$("adminEmail").value.trim(), password=$("adminPassword").value;
+  if(!email||!password){ $("adminStatus").textContent="Enter your existing admin email and password."; return; }
+  $("adminStatus").textContent="Signing in…";
+  const {error}=await DB_CLIENT.auth.signInWithPassword({email,password});
+  $("adminPassword").value="";
+  if(error){ $("adminStatus").textContent="Sign-in failed: "+error.message; return; }
+  await refreshAdminSession();
+};
+$("adminSignOut").onclick=async()=>{ if(DB_CLIENT) await DB_CLIENT.auth.signOut(); await refreshAdminSession(); };
+$("runImport").onclick=async()=>{
+  const status=$("adminStatus");
+  if(!DB_CLIENT){ status.textContent="Database is not connected."; return; }
+  const verified=await DB_CLIENT.rpc("is_current_user_admin");
+  if(verified.error||verified.data!==true){ status.textContent="Admin verification failed. Import blocked."; return; }
+  const table=$("importTable").value;
+  const allowed=new Set(["player_identities","players","player_cards","player_card_attributes","player_card_skills","player_card_positions","managers","manager_tactics","data_sources","media_assets"]);
+  if(!allowed.has(table)){ status.textContent="Unsupported destination."; return; }
+  let rows;
+  try{ rows=JSON.parse($("importJson").value); if(!Array.isArray(rows)) rows=[rows]; }
+  catch(e){ status.textContent="Invalid JSON: "+e.message; return; }
+  if(!rows.length || rows.some(x=>!x||Array.isArray(x)||typeof x!=="object")){ status.textContent="Provide one JSON object or an array of objects."; return; }
+  const keyByTable={player_identities:"konami_id",players:"player_id",player_cards:"card_id",player_card_attributes:["card_id","attribute_key"],player_card_skills:["card_id","skill_name"],player_card_positions:["card_id","position"],managers:"manager_id",manager_tactics:["manager_id","tactic_key"],data_sources:"source_id",media_assets:"asset_id"};
+  const conflict=keyByTable[table];
+  if(rows.some(row=>Array.isArray(conflict)?conflict.some(k=>row[k]===undefined):row[conflict]===undefined)){ status.textContent="Import blocked: every row needs its primary key ("+(Array.isArray(conflict)?conflict.join(", "):conflict)+")."; return; }
+  status.textContent="Importing "+rows.length+" record(s)…";
+  const {data,error}=await DB_CLIENT.from(table).upsert(rows,{onConflict:Array.isArray(conflict)?conflict.join(","):conflict}).select();
+  if(error){ status.textContent="Import failed: "+error.message; return; }
+  $("importJson").value="";
+  status.textContent="Successfully imported "+(data?.length??rows.length)+" record(s) into "+table+". Refreshing public catalog…";
+  await connectPlayerDatabase();
+  await refreshAdminSession();
+};
+
 function escapeHTML(value){return String(value??"").replace(/[&<>"\x27]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[ch]));}
 function renderManagers(){
   const grid=$("managerGrid");
@@ -471,6 +540,7 @@ $("sbKey").value="";
 
 applyStatic();
 connectPlayerDatabase();
+setTimeout(refreshAdminSession,500);
 </script>
 </body>
 </html>

@@ -110,11 +110,33 @@ if (Array.isArray(players)) {
       error(path + '.ovr', 'cannot exceed maxOvr');
     }
     if (p.releaseDate != null && !validDate(p.releaseDate)) error(path + '.releaseDate', 'must be YYYY-MM-DD or null');
-    if (p.attributes != null && !isObject(p.attributes)) error(path + '.attributes', 'must be an object');
+    if (p.attributes != null && !isObject(p.attributes)) {
+      error(path + '.attributes', 'must be an object');
+    } else if (isObject(p.attributes)) {
+      for (const [key, value] of Object.entries(p.attributes)) {
+        if (value !== null && (!Number.isFinite(value) || value < 0 || value > 110)) {
+          error(path + '.attributes.' + key, 'must be a number from 0 to 110 or null');
+        }
+      }
+    }
     if (p.skills != null && (!Array.isArray(p.skills) || p.skills.some(x => !nonEmpty(x)))) {
       error(path + '.skills', 'must be an array of non-empty strings');
     }
-    if (p.positions != null && !isObject(p.positions)) error(path + '.positions', 'must be an object');
+    if (p.positions != null && !isObject(p.positions)) {
+      error(path + '.positions', 'must be an object');
+    } else if (isObject(p.positions)) {
+      for (const [key, value] of Object.entries(p.positions)) {
+        if (value !== null && (!Number.isFinite(value) || value < 0 || value > 100)) {
+          error(path + '.positions.' + key, 'must be a number from 0 to 100 or null');
+        }
+      }
+    }
+    if (p.age != null) checkRange(p.age, 1, 100, path + '.age');
+    if (p.height != null) checkRange(p.height, 100, 250, path + '.height');
+    if (p.weight != null) checkRange(p.weight, 30, 250, path + '.weight');
+    if (p.foot != null && p.foot !== '' && !['Right','Left','Both'].includes(p.foot)) {
+      error(path + '.foot', 'must be Right, Left, Both, or empty');
+    }
     checkSource(p, path, 'player');
     if (p.verification !== 'verified') warning(path, 'not verified; keep unpublished until checked');
   });

@@ -451,7 +451,7 @@ async function connectPlayerDatabase(){
       const p=r.payload||{}, identity=identityById.get(String(r.player_id))||{}, details=identity.payload||{};
       const attrs=Object.fromEntries(Object.values(ATTR_GROUPS).flat().map(k=>[k,"—"]));
       Object.assign(attrs,p.attributes||p.attrs||{});
-      return {id:i+1,name:r.name||p.name||identity.name||"Unknown player",club:p.team||details.team||"",pos:r.position||identity.position||"—",
+      return {id:200000+i,name:r.name||p.name||identity.name||"Unknown player",club:p.team||details.team||"",pos:r.position||identity.position||"—",
         ovr:r.overall??p.overall??p.ovr??"—",max:p.max_overall??p.max??r.overall??"—",tier:r.card_type||"eFootball",
         h:num(p.height_cm,p.height,details.height),w:num(p.weight_kg,p.weight,details.weight),age:num(p.age,details.age),
         foot:(p.foot||details.foot)==="Left"?"L":(p.foot||details.foot)==="Both"?"B":(p.foot||details.foot)==="Right"?"R":"",
@@ -460,7 +460,7 @@ async function connectPlayerDatabase(){
     const identityRows=identities.map((r,i)=>{
       const p=r.payload||{};
       const attrs=Object.fromEntries(Object.values(ATTR_GROUPS).flat().map(k=>[k,"—"]));
-      return {id:i+1,name:r.name||p.name||"Unknown player",club:p.team||"",pos:r.position||p.pos||"—",ovr:"—",max:"—",tier:"Player",
+      return {id:100000+i,name:r.name||p.name||"Unknown player",club:p.team||"",pos:r.position||p.pos||"—",ovr:"—",max:"—",tier:"Player",
         h:num(p.height_cm,p.height),w:num(p.weight_kg,p.weight),age:num(p.age),foot:p.foot==="Left"?"L":p.foot==="Both"?"B":p.foot==="Right"?"R":"",
         playstyle:"",attrs:attrs,skills:[],gold:[],positions:{}};
     });

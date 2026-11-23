@@ -543,7 +543,7 @@ const IMPORT_TEMPLATES={
   manager_tactics:["manager_id","tactic_key","tactic_value","source_url","verification"]
 };
 function templateRows(table){
-  const headers=IMPORT_TEMPLATES[table]||Object.keys(IMPORT_KEYS).includes(table)?(IMPORT_TEMPLATES[table]||[]):[];
+  const headers=IMPORT_TEMPLATES[table]||[];
   if(!headers.length) return null;
   return headers;
 }

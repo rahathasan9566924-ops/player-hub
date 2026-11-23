@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Player Hub (Prototype)</title>
+<title>eFootball Zone 0.1 | Player & Manager Database</title>
 <style>
   :root{
     --bg:#0f1218; --panel:#171c26; --panel2:#1f2632; --line:#2a3342;
@@ -85,7 +85,7 @@
 
 <header>
   <button class="back" id="backBtn" aria-label="Back">←</button>
-  <h1 id="title">Player Hub</h1>
+  <h1 id="title">eFootball Zone 0.1</h1>
   <div class="lang" role="group" aria-label="Language">
     <button data-lang="en" class="on">EN</button>
     <button data-lang="bn">বাংলা</button>
@@ -159,51 +159,8 @@
 </div>
 
 <script>
-// ---- Sample data (fictional, not real players) ----
-const ATTR_GROUPS = {
-  attack:  ["Offensive Awareness","Ball Control","Dribbling","Tight Possession","Low Pass","Lofted Pass","Finishing","Heading","Set Pieces","Curl"],
-  power:   ["Speed","Acceleration","Kicking Power","Jumping","Physical Contact","Balance","Stamina"],
-  defence: ["Defensive Awareness","Tackling","Aggression","Defensive Engagement"],
-  gk:      ["GK Awareness","GK Catching","GK Deflecting","GK Reflexes"]
-};
-
-const SAMPLE_PLAYERS = [
-  { id:1, name:"Marco Vellan", club:"Northbridge FC", pos:"LB", ovr:87, max:94, tier:"B", h:178, w:74, age:25, foot:"L", playstyle:"Offensive Fullback · The Destroyer",
-    attrs:{ "Offensive Awareness":79,"Ball Control":80,"Dribbling":84,"Tight Possession":81,"Low Pass":80,"Lofted Pass":87,"Finishing":76,"Heading":71,"Set Pieces":87,"Curl":90,
-            "Speed":92,"Acceleration":94,"Kicking Power":88,"Jumping":83,"Physical Contact":86,"Balance":92,"Stamina":90,
-            "Defensive Awareness":80,"Tackling":86,"Aggression":86,"Defensive Engagement":83,
-            "GK Awareness":41,"GK Catching":41,"GK Deflecting":41,"GK Reflexes":41 },
-    skills:["Low Screamer","Edged Crossing","Shadow Hunt","Through Passing","Pinpoint Crossing","Long Throws"], gold:[0,1,2],
-    positions:{ LB:86, LWF:78, LMF:74, DMF:70, CB:72, RB:85, GK:20 } },
-  { id:2, name:"Daniel Okafor", club:"Riverside United", pos:"CF", ovr:88, max:95, tier:"A", h:184, w:79, age:27, foot:"R", playstyle:"Goal Poacher · Chip Shot Control",
-    attrs:{ "Offensive Awareness":92,"Ball Control":84,"Dribbling":86,"Tight Possession":80,"Low Pass":75,"Lofted Pass":70,"Finishing":94,"Heading":90,"Set Pieces":60,"Curl":72,
-            "Speed":86,"Acceleration":88,"Kicking Power":90,"Jumping":89,"Physical Contact":84,"Balance":82,"Stamina":80,
-            "Defensive Awareness":40,"Tackling":35,"Aggression":70,"Defensive Engagement":38,
-            "GK Awareness":30,"GK Catching":30,"GK Deflecting":30,"GK Reflexes":30 },
-    skills:["Chip Shot Control","Long Range Shooting","Rising Shot","Cross Shot","Fox in the Box"], gold:[0,2],
-    positions:{ CF:88, ST:87, LWF:82, RWF:83, AMF:70, CMF:52, GK:10 } },
-  { id:3, name:"Ilias Ferreira", club:"Lakeshore City", pos:"CMF", ovr:84, max:91, tier:"A", h:176, w:70, age:23, foot:"R", playstyle:"Creative Playmaker · Through Passing",
-    attrs:{ "Offensive Awareness":85,"Ball Control":89,"Dribbling":82,"Tight Possession":88,"Low Pass":91,"Lofted Pass":84,"Finishing":68,"Heading":60,"Set Pieces":80,"Curl":78,
-            "Speed":76,"Acceleration":78,"Kicking Power":80,"Jumping":66,"Physical Contact":70,"Balance":84,"Stamina":88,
-            "Defensive Awareness":74,"Tackling":70,"Aggression":66,"Defensive Engagement":72,
-            "GK Awareness":25,"GK Catching":25,"GK Deflecting":25,"GK Reflexes":25 },
-    skills:["Through Passing","Pinpoint Passing","Incisive Run","Rising Shot"], gold:[0],
-    positions:{ CMF:90, AMF:88, DMF:82, LMF:84, RMF:84, CF:62, GK:12 } },
-  { id:4, name:"Tomas Hadley", club:"Harbour Athletic", pos:"GK", ovr:86, max:92, tier:"B", h:190, w:84, age:29, foot:"R", playstyle:"Sweeper Keeper",
-    attrs:{ "Offensive Awareness":20,"Ball Control":45,"Dribbling":20,"Tight Possession":40,"Low Pass":60,"Lofted Pass":55,"Finishing":15,"Heading":30,"Set Pieces":25,"Curl":10,
-            "Speed":55,"Acceleration":50,"Kicking Power":78,"Jumping":84,"Physical Contact":80,"Balance":72,"Stamina":70,
-            "Defensive Awareness":60,"Tackling":40,"Aggression":50,"Defensive Engagement":40,
-            "GK Awareness":90,"GK Catching":88,"GK Deflecting":86,"GK Reflexes":91 },
-    skills:["Long Throws","Cross Catching","Bicycle Clearance"], gold:[1],
-    positions:{ GK:92, CB:40, CMF:30, LB:28, RB:28, CF:12 } },
-  { id:5, name:"Kenji Aoyama", club:"Sakura Youth", pos:"RWF", ovr:85, max:93, tier:"A", h:172, w:65, age:21, foot:"R", playstyle:"Speedster · Outside Curler",
-    attrs:{ "Offensive Awareness":83,"Ball Control":86,"Dribbling":93,"Tight Possession":88,"Low Pass":72,"Lofted Pass":68,"Finishing":82,"Heading":52,"Set Pieces":70,"Curl":84,
-            "Speed":95,"Acceleration":96,"Kicking Power":74,"Jumping":60,"Physical Contact":58,"Balance":86,"Stamina":82,
-            "Defensive Awareness":44,"Tackling":40,"Aggression":52,"Defensive Engagement":42,
-            "GK Awareness":22,"GK Catching":22,"GK Deflecting":22,"GK Reflexes":22 },
-    skills:["Outside Curler","Flip Flap","Quick Step","Super-Sub"], gold:[0,3],
-    positions:{ RWF:90, LWF:88, AMF:80, RMF:82, CF:78, LMF:80, GK:8 } }
-];
+// The public catalog displays only records loaded from the connected database.
+const SAMPLE_PLAYERS = [];
 
 let PLAYERS = SAMPLE_PLAYERS;
 let MANAGERS = [];
@@ -332,7 +289,7 @@ function updateCompareBar(){
 
 function showList(){
   $("list").style.display="block"; $("detail").style.display="none"; $("compareView").style.display="none"; showPlayersTab();
-  $("backBtn").style.display="none"; $("title").textContent="Player Hub";
+  $("backBtn").style.display="none"; $("title").textContent="eFootball Zone 0.1";
   current = null;
   renderGrid(); updateCompareBar();
 }

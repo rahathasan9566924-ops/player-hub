@@ -119,9 +119,19 @@
           <option value="player_identities">Player identities</option><option value="players">Legacy player cards</option><option value="player_cards">Detailed player cards</option><option value="player_card_attributes">Card attributes</option><option value="player_card_skills">Card skills</option><option value="player_card_positions">Card positions</option><option value="managers">Managers</option><option value="manager_tactics">Manager tactics</option><option value="data_sources">Data sources</option><option value="media_assets">Media assets</option>
         </select>
       </label>
-      <textarea id="importJson" rows="8" placeholder='Paste a JSON object or array, for example: [{"konami_id":"...","name":"...","position":"CF","country":"...","published":true}]' style="width:100%;padding:11px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line);font:13px monospace"></textarea>
-      <p class="note" style="padding:0">Only import data you have permission to use. Use verified sources. Related card attributes, skills and positions require an existing card_id.</p>
-      <button class="btn" id="runImport" style="margin:0">Validate and import JSON</button>
+      <div style="display:grid;gap:8px">
+        <label style="font-size:13px;color:var(--muted)">Import file (CSV or JSON)
+          <input id="importFile" type="file" accept=".csv,.json,application/json,text/csv" style="display:block;width:100%;margin-top:5px">
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" type="button" id="downloadImportTemplate" style="margin:0">Download selected-table template</button>
+          <button class="btn ghost" type="button" id="loadImportFile" style="margin:0">Load file into editor</button>
+        </div>
+      </div>
+      <textarea id="importJson" rows="8" placeholder='Paste JSON array or CSV rows here. Card rows need an existing konami_id in player_identities.' style="width:100%;padding:11px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--line);font:13px monospace"></textarea>
+      <p class="note" style="padding:0">Bulk import supports CSV and JSON. Card rows must reference an existing player identity. Imported records stay unpublished by default unless you explicitly set published=true. Use only data you have permission to use.</p>
+      <p id="importPreview" class="note" style="padding:0" aria-live="polite">Choose a table and load a template or data file.</p>
+      <button class="btn" id="runImport" style="margin:0">Validate and import records</button>
       <button class="btn ghost" id="adminSignOut" style="margin:0">Sign out</button>
     </div>
   </section>
@@ -499,28 +509,103 @@ $("adminSignIn").onclick=async()=>{
   await refreshAdminSession();
 };
 $("adminSignOut").onclick=async()=>{ if(DB_CLIENT) await DB_CLIENT.auth.signOut(); await refreshAdminSession(); };
+function parseImportCSV(text){
+  const rows=[]; let row=[], cell="", quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if(quoted){ if(c==='"'&&n==='"'){cell+='"';i++;} else if(c==='"') quoted=false; else cell+=c; }
+    else if(c==='"') quoted=true;
+    else if(c===","){row.push(cell.trim());cell="";}
+    else if(c==="\\n"||c==="\\r"){if(c==="\\r"&&n==="\\n")i++;row.push(cell.trim());if(row.some(v=>v!==""))rows.push(row);row=[];cell="";}
+    else cell+=c;
+  }
+  row.push(cell.trim()); if(row.some(v=>v!==""))rows.push(row);
+  if(!rows.length) return [];
+  const headers=rows.shift().map(h=>h.replace(/^\\uFEFF/,"").trim());
+  if(headers.some(h=>!h)) throw new Error("CSV header contains an empty column.");
+  return rows.map(values=>Object.fromEntries(headers.map((h,i)=>[h,values[i]??""])));
+}
+function parseImportRows(raw){
+  const trimmed=raw.trim(); if(!trimmed) throw new Error("প্রথমে JSON বা CSV ডেটা দিন।");
+  if(trimmed.startsWith("[")||trimmed.startsWith("{")){
+    const parsed=JSON.parse(trimmed); return Array.isArray(parsed)?parsed:[parsed];
+  }
+  return parseImportCSV(trimmed);
+}
+const IMPORT_KEYS={player_identities:"konami_id",players:"player_id",player_cards:"card_id",player_card_attributes:["card_id","attribute_key"],player_card_skills:["card_id","skill_name"],player_card_positions:["card_id","position"],managers:"manager_id",manager_tactics:["manager_id","tactic_key"],data_sources:"source_id",media_assets:"asset_id"};
+const IMPORT_TEMPLATES={
+  player_cards:["card_id","konami_id","card_name","card_type","overall","position","release_date","image_url","source_url","verification","published","payload"],
+  managers:["manager_id","name","team","formation","playstyle","source_url","verification","published","payload"],
+  player_identities:["konami_id","name","position","country","payload","published"],
+  player_card_attributes:["card_id","attribute_key","attribute_value","source_url","verification"],
+  player_card_skills:["card_id","skill_name","source_url","verification"],
+  player_card_positions:["card_id","position","proficiency","source_url","verification"],
+  manager_tactics:["manager_id","tactic_key","tactic_value","source_url","verification"]
+};
+function templateRows(table){
+  const headers=IMPORT_TEMPLATES[table]||Object.keys(IMPORT_KEYS).includes(table)?(IMPORT_TEMPLATES[table]||[]):[];
+  if(!headers.length) return null;
+  return headers;
+}
+$("downloadImportTemplate").onclick=()=>{
+  const table=$("importTable").value, headers=templateRows(table);
+  if(!headers){$("importPreview").textContent="এই টেবিলের জন্য টেমপ্লেট নির্ধারিত নেই।";return;}
+  const csv=headers.join(",")+"\\n";
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=table+"-import-template.csv";a.click();URL.revokeObjectURL(a.href);
+};
+$("loadImportFile").onclick=async()=>{
+  const file=$("importFile").files[0]; if(!file){$("importPreview").textContent="আগে CSV বা JSON ফাইল নির্বাচন করুন।";return;}
+  try{$("importJson").value=await file.text();const rows=parseImportRows($("importJson").value);$("importPreview").textContent=file.name+": "+rows.length+"টি রেকর্ড লোড হয়েছে। এখন যাচাই করে Import চাপুন।";}
+  catch(e){$("importPreview").textContent="ফাইল পড়া যায়নি: "+e.message;}
+};
+$("importTable").onchange=()=>{$("importPreview").textContent="Selected table: "+$("importTable").value+". Template download করে CSV/JSON ডেটা যোগ করুন।";};
 $("runImport").onclick=async()=>{
-  const status=$("adminStatus");
-  if(!DB_CLIENT){ status.textContent="Database is not connected."; return; }
+  const status=$("adminStatus"), preview=$("importPreview");
+  if(!DB_CLIENT){status.textContent="Database is not connected.";return;}
   const verified=await DB_CLIENT.rpc("is_current_user_admin");
-  if(verified.error||verified.data!==true){ status.textContent="Admin verification failed. Import blocked."; return; }
-  const table=$("importTable").value;
-  const allowed=new Set(["player_identities","players","player_cards","player_card_attributes","player_card_skills","player_card_positions","managers","manager_tactics","data_sources","media_assets"]);
-  if(!allowed.has(table)){ status.textContent="Unsupported destination."; return; }
+  if(verified.error||verified.data!==true){status.textContent="Admin verification failed. Import blocked.";return;}
+  const table=$("importTable").value, key=IMPORT_KEYS[table];
+  if(!key){status.textContent="Unsupported destination.";return;}
   let rows;
-  try{ rows=JSON.parse($("importJson").value); if(!Array.isArray(rows)) rows=[rows]; }
-  catch(e){ status.textContent="Invalid JSON: "+e.message; return; }
-  if(!rows.length || rows.some(x=>!x||Array.isArray(x)||typeof x!=="object")){ status.textContent="Provide one JSON object or an array of objects."; return; }
-  const keyByTable={player_identities:"konami_id",players:"player_id",player_cards:"card_id",player_card_attributes:["card_id","attribute_key"],player_card_skills:["card_id","skill_name"],player_card_positions:["card_id","position"],managers:"manager_id",manager_tactics:["manager_id","tactic_key"],data_sources:"source_id",media_assets:"asset_id"};
-  const conflict=keyByTable[table];
-  if(rows.some(row=>Array.isArray(conflict)?conflict.some(k=>row[k]===undefined):row[conflict]===undefined)){ status.textContent="Import blocked: every row needs its primary key ("+(Array.isArray(conflict)?conflict.join(", "):conflict)+")."; return; }
-  status.textContent="Importing "+rows.length+" record(s)…";
-  const {data,error}=await DB_CLIENT.from(table).upsert(rows,{onConflict:Array.isArray(conflict)?conflict.join(","):conflict}).select();
-  if(error){ status.textContent="Import failed: "+error.message; return; }
-  $("importJson").value="";
-  status.textContent="Successfully imported "+(data?.length??rows.length)+" record(s) into "+table+". Refreshing public catalog…";
-  await connectPlayerDatabase();
-  await refreshAdminSession();
+  try{rows=parseImportRows($("importJson").value);}
+  catch(e){status.textContent="ডেটা পড়তে সমস্যা: "+e.message;return;}
+  if(!rows.length||rows.some(x=>!x||Array.isArray(x)||typeof x!=="object")){status.textContent="কমপক্ষে একটি সঠিক JSON object বা CSV row দিন।";return;}
+  const missing=rows.findIndex(row=>Array.isArray(key)?key.some(k=>row[k]===undefined||row[k]===""):row[key]===undefined||row[key]==="");
+  if(missing>=0){status.textContent="রেকর্ড "+(missing+1)+"-এ primary key অনুপস্থিত: "+(Array.isArray(key)?key.join(", "):key);return;}
+  const toBool=v=>v===true||v==="true"||v==="TRUE"||v==="1";
+  try{
+    rows=rows.map((row,i)=>{
+      const x={...row};
+      if(table==="player_cards"){
+        if(!x.card_name||!x.konami_id||!x.position||!x.card_type) throw new Error("Card row "+(i+1)+": card_name, konami_id, position ও card_type আবশ্যক।");
+        if(x.overall!==""&&x.overall!=null){x.overall=Number(x.overall);if(!Number.isInteger(x.overall)||x.overall<40||x.overall>110)throw new Error("Card row "+(i+1)+": overall 40-110 হতে হবে।");}
+      }
+      if(table==="managers"&&(!x.name||!x.formation)) throw new Error("Manager row "+(i+1)+": name ও formation আবশ্যক।");
+      for(const n of ["overall","attribute_value","proficiency"]) if(x[n]!==undefined&&x[n]!==""){x[n]=Number(x[n]);if(!Number.isFinite(x[n]))throw new Error("Row "+(i+1)+": "+n+" সংখ্যা হতে হবে।");}
+      for(const b of ["published"]) if(x[b]!==undefined&&x[b]!=="")x[b]=toBool(x[b]);
+      if(typeof x.payload==="string"&&x.payload.trim()){x.payload=JSON.parse(x.payload);}
+      if(x.published===undefined)x.published=false;
+      if(x.verification===undefined)x.verification="pending";
+      return x;
+    });
+  }catch(e){status.textContent="Validation failed: "+e.message;return;}
+  const conflicts=Array.isArray(key)?key.join(","):key;
+  const unique=new Set(rows.map(r=>Array.isArray(key)?key.map(k=>r[k]).join("|"):String(r[key])));
+  if(unique.size!==rows.length){status.textContent="একই import batch-এ duplicate primary key আছে। আগে duplicate ঠিক করুন।";return;}
+  status.textContent="যাচাই শেষে "+rows.length+"টি record import হচ্ছে…";
+  let imported=0;
+  for(let i=0;i<rows.length;i+=100){
+    const batch=rows.slice(i,i+100);
+    const {data,error}=await DB_CLIENT.from(table).upsert(batch,{onConflict:conflicts}).select();
+    if(error){status.textContent="Import "+imported+"/"+rows.length+"-এ থেমেছে: "+error.message+"; বাকি ডেটা import হয়নি।";return;}
+    imported+=data?.length??batch.length;
+    preview.textContent="Import progress: "+imported+" / "+rows.length;
+  }
+  $("importJson").value="";$("importFile").value="";
+  status.textContent="সফল: "+imported+"টি record "+table+" টেবিলে import হয়েছে।";
+  preview.textContent="Import complete. Records unpublished রাখা হয়েছে; যাচাই শেষে published=true করুন।";
+  await connectPlayerDatabase(); await refreshAdminSession();
 };
 
 function escapeHTML(value){return String(value??"").replace(/[&<>"\x27]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[ch]));}

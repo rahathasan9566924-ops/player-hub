@@ -534,13 +534,16 @@ function parseImportRows(raw){
 }
 const IMPORT_KEYS={player_identities:"konami_id",players:"player_id",player_cards:"card_id",player_card_attributes:["card_id","attribute_key"],player_card_skills:["card_id","skill_name"],player_card_positions:["card_id","position"],managers:"manager_id",manager_tactics:["manager_id","tactic_key"],data_sources:"source_id",media_assets:"asset_id"};
 const IMPORT_TEMPLATES={
-  player_cards:["card_id","konami_id","card_name","card_type","overall","position","release_date","image_url","source_url","verification","published","payload"],
-  managers:["manager_id","name","team","formation","playstyle","source_url","verification","published","payload"],
   player_identities:["konami_id","name","position","country","payload","published"],
+  players:["player_id","name","position","overall","card_type","source_url","verification","payload","published"],
+  player_cards:["card_id","konami_id","card_name","card_type","overall","position","release_date","image_url","source_url","verification","published","payload"],
   player_card_attributes:["card_id","attribute_key","attribute_value","source_url","verification"],
   player_card_skills:["card_id","skill_name","source_url","verification"],
   player_card_positions:["card_id","position","proficiency","source_url","verification"],
-  manager_tactics:["manager_id","tactic_key","tactic_value","source_url","verification"]
+  managers:["manager_id","name","team","formation","playstyle","source_url","verification","published","payload"],
+  manager_tactics:["manager_id","tactic_key","tactic_value","source_url","verification"],
+  data_sources:["source_id","source_name","source_url","terms_url","permission_status","notes","active"],
+  media_assets:["asset_id","related_type","related_id","asset_type","asset_url","source_url","permission_status","attribution","published"]
 };
 function templateRows(table){
   const headers=IMPORT_TEMPLATES[table]||[];

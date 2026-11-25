@@ -588,9 +588,18 @@ $("runImport").onclick=async()=>{
       for(const n of ["overall","attribute_value","proficiency"]) if(x[n]!==undefined&&x[n]!==""){x[n]=Number(x[n]);if(!Number.isFinite(x[n]))throw new Error("Row "+(i+1)+": "+n+" সংখ্যা হতে হবে।");}
       for(const k of Object.keys(x)) if(x[k]==="") x[k]=null;
       if(x.published!==undefined&&x.published!==null)x.published=toBool(x.published);
+      if(x.active!==undefined&&x.active!==null)x.active=toBool(x.active);
       if(typeof x.payload==="string"&&x.payload.trim()){x.payload=JSON.parse(x.payload);}
       if(x.published==null)x.published=false;
       if(x.verification==null)x.verification="pending";
+      // A source cannot be activated unless reuse permission is explicitly cleared.
+      if(table==="data_sources"&&x.active===true&&x.permission_status!=="authorized"){
+        throw new Error("Data source row "+(i+1)+": active=true requires permission_status=authorized.");
+      }
+      // Never publish third-party media unless its reuse rights are explicitly authorized.
+      if(table==="media_assets"&&x.published===true&&x.permission_status!=="authorized"){
+        throw new Error("Media asset row "+(i+1)+": published=true requires permission_status=authorized.");
+      }
       return x;
     });
   }catch(e){status.textContent="Validation failed: "+e.message;return;}
